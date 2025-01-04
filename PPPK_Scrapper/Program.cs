@@ -6,8 +6,8 @@ using System.IO.Compression;
 
 var chromeOptions = new ChromeOptions();
 chromeOptions.AddArguments("--headless=new");
-var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads",
-    $"Data{DateTime.Now.ToString("yyyy-MM-dd")}");
+
+var path = "Data";
 if (Directory.Exists(path))
 {
     Directory.Delete(path, true);
@@ -86,13 +86,12 @@ foreach (var url in urls)
         driver.Navigate();
         try
         {
-
             var downloadLink = wait.Until(d =>
             {
                 try
                 {
-                    //*[@id="main"]/div/div/div/span[6]/span/a[1] 
-                    var rez = d.FindElement(By.XPath("//*[@id=\"main\"]/div/div/div/span[6]/span/a[1]"));
+                    var rez = d.FindElement(
+                        By.CssSelector("#main > div > div > div > div > span:nth-child(13) > span > a:nth-child(1) "));
                     return rez;
                 }
                 catch (Exception e)
@@ -162,25 +161,24 @@ Console.WriteLine("Downloads finished.");
 // }
 
 
+var fileszp = new DirectoryInfo(path).GetFiles().Select(f => f.FullName);
+foreach (var gzipFilePath in fileszp)
 {
-    var files = new DirectoryInfo(path).GetFiles().Select(f => f.FullName);
-    foreach (var gzipFilePath in files)
+    using (FileStream originalFileStream = new FileStream(gzipFilePath, FileMode.Open, FileAccess.Read))
     {
-        using (FileStream originalFileStream = new FileStream(gzipFilePath, FileMode.Open, FileAccess.Read))
+        using (GZipStream decompressionStream = new GZipStream(originalFileStream, CompressionMode.Decompress))
         {
-            using (GZipStream decompressionStream = new GZipStream(originalFileStream, CompressionMode.Decompress))
+            // Create a new file using the decompressed stream
+            using (FileStream decompressedFileStream = new FileStream(gzipFilePath.Replace(".gz", ".txt"),
+                       FileMode.Create, FileAccess.Write))
             {
-                // Create a new file using the decompressed stream
-                using (FileStream decompressedFileStream = new FileStream(gzipFilePath.Replace(".gz", ".txt"),
-                           FileMode.Create, FileAccess.Write))
-                {
-                    decompressionStream.CopyTo(decompressedFileStream);
-                    Console.WriteLine($"Decompressed: {gzipFilePath} to {path}");
-                }
+                decompressionStream.CopyTo(decompressedFileStream);
+                Console.WriteLine($"Decompressed: {gzipFilePath} to {path}");
             }
         }
     }
 }
+
 
 string[] gzFiles = Directory.GetFiles(path, "*.gz");
 foreach (string gzFile in gzFiles)
