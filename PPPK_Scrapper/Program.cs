@@ -7,7 +7,7 @@ using System.IO.Compression;
 var chromeOptions = new ChromeOptions();
 chromeOptions.AddArguments("--headless=new");
 
-var path = "Data";
+var path = Path.Combine(Directory.GetCurrentDirectory(), "Data");
 if (Directory.Exists(path))
 {
     Directory.Delete(path, true);
